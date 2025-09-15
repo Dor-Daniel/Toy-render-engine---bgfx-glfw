@@ -1,0 +1,12 @@
+// bgfx shaderc source
+$input  a_position, a_color0
+$output v_color0
+
+#include "bgfx_shader.sh"
+
+
+void main()
+{
+    v_color0    = a_color0;                           // pass-through vertex color
+    gl_Position = mul(u_modelViewProj, vec4(a_position, 1.0));
+}

@@ -1,0 +1,166 @@
+cmake_minimum_required(VERSION 3.21)
+project(BGFX_project CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# CMakeLists.txt (near the top)
+include(FetchContent)
+
+# ---- bgfx.cmake + tools (shaderc) ----
+set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BGFX_BUILD_TOOLS   ON  CACHE BOOL "" FORCE)   # <-- shaderc target
+FetchContent_Declare(bgfx_cmake
+  GIT_REPOSITORY https://github.com/bkaradzic/bgfx.cmake.git
+  GIT_TAG master
+)
+
+FetchContent_MakeAvailable(bgfx_cmake)
+
+# ---- GLFW ----
+FetchContent_Declare(glfw
+  GIT_REPOSITORY https://github.com/glfw/glfw.git
+  GIT_TAG 3.3.9
+)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(glfw)
+
+# ----------------------------------------------------- Your app --------------------------------
+add_executable(BGFX_project 
+  src/main.cpp
+  src/config.hpp
+
+  src/utils/utils.cpp
+
+  src/shader/shader_loader.hpp
+  src/shader/shader_loader.cpp
+  src/shader/shader.hpp
+  src/shader/shader.cpp
+
+  src/drawer/cube.hpp
+  src/drawer/cube.cpp
+  src/drawer/line.hpp
+  src/drawer/line.cpp
+  src/drawer/mesh.hpp
+  src/drawer/mesh.cpp
+
+  src/drawer/extras/axis.cpp
+  src/drawer/extras/axis.hpp
+  
+  src/time/time.hpp
+  src/time/time.cpp
+
+  src/components/transform.hpp
+  src/components/transform.cpp
+
+  src/input/input.hpp
+  src/input/input.cpp
+)
+# add_custom_command(TARGET BGFX_project POST_BUILD
+#   COMMAND ${CMAKE_COMMAND} -E copy_directory
+#           "${SHADER_OUT_DIR}"
+#           "$<TARGET_FILE_DIR:BGFX_project>/shaders/compiled")
+
+target_link_libraries(BGFX_project PRIVATE bgfx bx bimg glfw)
+if (WIN32 AND MINGW)
+  target_link_libraries(BGFX_project PRIVATE gdi32 user32 shell32 ole32 oleaut32 psapi)
+endif()
+target_compile_definitions(BGFX_project PRIVATE
+  $<$<CONFIG:Debug>:BX_CONFIG_DEBUG=1>
+  $<$<CONFIG:Release>:BX_CONFIG_DEBUG=0;NDEBUG>
+)
+
+# Make headers visible to IntelliSense
+target_include_directories(BGFX_project PRIVATE
+  ${CMAKE_BINARY_DIR}/_deps/bgfx-src/include
+  ${CMAKE_BINARY_DIR}/_deps/bx-src/include
+  ${CMAKE_BINARY_DIR}/_deps/bimg-src/include
+  ${CMAKE_BINARY_DIR}/_deps/glfw-src/include
+)
+
+# =======================
+# Shader build pipeline
+# =======================
+set(SHADER_OUT_DIR ${CMAKE_SOURCE_DIR}/shaders/compiled)
+# Normalize to forward slashes and export to the program as SHADER_BIN_DIR
+file(TO_CMAKE_PATH "${SHADER_OUT_DIR}" SHADER_OUT_DIR_NORM)
+target_compile_definitions(BGFX_project PRIVATE SHADER_BIN_DIR="${SHADER_OUT_DIR_NORM}")
+message(STATUS "Shader binary dir: ${SHADER_OUT_DIR_NORM}")
+
+
+# 1) Collect your stage files
+file(GLOB_RECURSE SHADERS_VERT  CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/vertex/*.vert.sc)
+file(GLOB_RECURSE SHADERS_FRAG  CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/fragment/*.frag.sc)
+
+# 2) Varying interface file (rename path if you kept .sc)
+set(VARYING_FILE ${CMAKE_SOURCE_DIR}/shaders/interface/varying.def.sc)
+if(NOT EXISTS "${VARYING_FILE}")
+  message(FATAL_ERROR "Missing varying file at: ${VARYING_FILE}")
+endif()
+
+# 3) Shaderc platform/profile (match your renderer)
+set(SHADER_PLATFORM windows)
+
+set(SHADER_PROFILE spirv)  # Vulkan; for D3D11 use s_5_0, for GL use 430, for Metal use metal
+
+# 4) bgfx include dir so #include <bgfx_shader.sh> resolves
+set(BGFX_SHADER_INCLUDE_DIR ${bgfx_cmake_SOURCE_DIR}/bgfx/src)
+
+# 5) Per-file rules (no helper function; iterate real lists)
+set(VERT_BINARIES)
+foreach(SRC ${SHADERS_VERT})
+  get_filename_component(NAME_WE "${SRC}" NAME_WE)
+  set(OUT "${SHADER_OUT_DIR}/${NAME_WE}.v.bin")
+  add_custom_command(
+    OUTPUT "${OUT}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_OUT_DIR}"
+    COMMAND $<TARGET_FILE:shaderc>
+            -f "${SRC}" 
+            --type v
+            --platform ${SHADER_PLATFORM}
+            --profile ${SHADER_PROFILE}
+            -i "${BGFX_SHADER_INCLUDE_DIR}"
+            -i "${CMAKE_SOURCE_DIR}/shaders"
+            --varyingdef "${VARYING_FILE}"
+            -o "${OUT}" "${SRC}"
+    DEPENDS shaderc "${SRC}" "${VARYING_FILE}"
+    VERBATIM
+  )
+  list(APPEND VERT_BINARIES "${OUT}")
+endforeach()
+
+set(FRAG_BINARIES)
+foreach(SRC ${SHADERS_FRAG})
+  get_filename_component(NAME_WE "${SRC}" NAME_WE)
+  set(OUT "${SHADER_OUT_DIR}/${NAME_WE}.f.bin")
+  add_custom_command(
+    OUTPUT "${OUT}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_OUT_DIR}"
+    COMMAND $<TARGET_FILE:shaderc>
+            -f "${SRC}" 
+            --type f
+            --platform ${SHADER_PLATFORM}
+            --profile ${SHADER_PROFILE}
+            -i "${BGFX_SHADER_INCLUDE_DIR}"
+            -i "${CMAKE_SOURCE_DIR}/shaders"
+            --varyingdef "${VARYING_FILE}"
+            -o "${OUT}" "${SRC}"
+    DEPENDS shaderc "${SRC}" "${VARYING_FILE}"
+    VERBATIM
+  )
+  list(APPEND FRAG_BINARIES "${OUT}")
+endforeach()
+
+set(ALL_SHADER_BINS ${VERT_BINARIES} ${FRAG_BINARIES})
+
+# 6) Build shaders automatically and before the exe
+add_custom_target(shader_bins ALL DEPENDS ${ALL_SHADER_BINS})
+add_dependencies(BGFX_project shader_bins)
+
+# # Optional: run then delete only compiled bins
+add_custom_target(run
+  COMMAND $<TARGET_FILE:BGFX_project>
+  DEPENDS BGFX_project shader_bins
+  USES_TERMINAL
+)
