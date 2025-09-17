@@ -16,6 +16,10 @@ namespace Components {
         math::Vec3 get_position() const;
         math::Vec3 get_rotation() const;
         math::Vec3 get_scale() const;
+
+        void set_position(math::Vec3 val);
+        void set_rotation(math::Vec3 val);
+        void set_scale   (math::Vec3 val);
     };
 
 } // namespace Components

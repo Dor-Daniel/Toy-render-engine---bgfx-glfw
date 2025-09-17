@@ -18,4 +18,8 @@ namespace Components {
     math::Vec3 transform::get_rotation() const { return rotation; }
     math::Vec3 transform::get_scale()    const { return scale; }
 
+    void transform::set_position(math::Vec3 val) { position = std::move(val);};
+    void transform::set_rotation(math::Vec3 val) { rotation = std::move(val); };
+    void transform::set_scale   (math::Vec3 val) { scale    = std::move(val); };
+
 } // namespace Components

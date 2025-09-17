@@ -14,6 +14,7 @@
 #include <memory>
 #include <cstddef>
 #include <array>
+#include <map>
 
 //########################//
 //      bgfx, GLFW        //
@@ -22,6 +23,7 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
+#include <bx/allocator.h>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>

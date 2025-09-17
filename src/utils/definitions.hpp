@@ -9,6 +9,12 @@ struct PosColorVertex {
     Color abgr;
 };
 
-typedef PosColorVertex vertex_info;
+struct PosNormColorVertex {
+    float x, y, z;
+    float nx, ny, nz;
+    Color abgr;
+};
+
+typedef PosNormColorVertex vertex_info;
 typedef uint16_t triangles_info;
 

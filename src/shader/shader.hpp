@@ -98,7 +98,7 @@ namespace Shader {
         ProgramType add_program(const std::string& vert_stem, const std::string& frag_stem);
 
         // Track things to draw
-        void add_shader_info(ShaderInfo&& info);
+        std::shared_ptr<ShaderInfo> add_shader_info(std::shared_ptr<Shader::ShaderInfo> info); // returns the shared object
 
         // Issue draw calls
         void update();
@@ -110,7 +110,7 @@ namespace Shader {
     private:
         shader() = default;
 
-        std::vector<ShaderInfo>              shader_infos_;
+        std::vector<std::shared_ptr<ShaderInfo>> shader_infos_;
         std::vector<bgfx::ProgramHandle>     programs_;
     };
 

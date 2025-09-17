@@ -56,7 +56,7 @@ ShaderInfo::~ShaderInfo() {
 void ShaderInfo::set_view_id(viewID_t id) { view_id = id; }
 
 void ShaderInfo::set_vertex_data(const void* data, uint32_t bytes, const bgfx::VertexLayout& layout) {
-    if (bgfx::isValid(v_handle)) return; // already set
+    if (bgfx::isValid(v_handle)) { bgfx::destroy(v_handle); v_handle = BGFX_INVALID_HANDLE; } // already set
     const bgfx::Memory* mem = bgfx::copy(data, bytes);
     v_handle = bgfx::createVertexBuffer(mem, layout);
 }
@@ -82,27 +82,30 @@ ProgramType shader::add_program(const std::string& vert_stem, const std::string&
     return static_cast<ProgramType>(programs_.size() - 1);
 }
 
-void shader::add_shader_info(ShaderInfo&& info) {
-    const auto idx = static_cast<size_t>(info.program_type);
-    if (idx >= programs_.size()) {
+std::shared_ptr<ShaderInfo> shader::add_shader_info(std::shared_ptr<Shader::ShaderInfo> info) {
+    auto sp = info;
+    if (sp->program_type >= programs_.size()) {
         throw std::runtime_error("Shader::add_shader_info: unknown program_type");
     }
-    shader_infos_.emplace_back(std::move(info));
+    shader_infos_.push_back(sp);
+    return sp;
 }
+
+
 void shader::update() {
 
 
     for (auto& si : shader_infos_) {
-        if (!bgfx::isValid(si.v_handle)) continue;
+        if (!bgfx::isValid(si->v_handle)) continue;
 
-        bgfx::setVertexBuffer(0, si.v_handle);
-        for (auto ib : si.i_handles) {
+        bgfx::setVertexBuffer(0, si->v_handle);
+        for (auto ib : si->i_handles) {
             if (!bgfx::isValid(ib)) continue;
-            bgfx::setTransform(si.transform_matrix);
+            bgfx::setTransform(si->transform_matrix);
             bgfx::setIndexBuffer(ib);
-            bgfx::setState(std::move(si.state));
-            const auto prog = programs_[static_cast<size_t>(si.program_type)];
-            bgfx::submit(si.view_id, prog);
+            bgfx::setState(std::move(si->state));
+            const auto prog = programs_[static_cast<size_t>(si->program_type)];
+            bgfx::submit(si->view_id, prog);
         }
     }
 }

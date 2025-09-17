@@ -91,8 +91,8 @@ namespace math{
     constexpr float length(const Vec3 &v){ return std::sqrt(dot(v, v)); }
     constexpr float length2(const Vec2 &v){ return dot(v, v); }
     constexpr float length2(const Vec3 &v){ return dot(v, v); }
-    constexpr Vec2  normalize(Vec2 v){ return v /= length(v); }
-    constexpr Vec3  normalize(Vec3 v){ return v /= length(v); }
+    constexpr Vec2  normalize(Vec2 v){ return v == Vec2::zero? v : v / length(v); }
+    constexpr Vec3  normalize(Vec3 v){ return v == Vec3::zero? v : v / length(v); }
     constexpr Vec3  cross(Vec3 v, Vec3 u){ 
             return  (v.y * u.z - v.z * u.y) * Vec3::e1 +
                     (v.z * u.x - v.x * u.z) * Vec3::e2 +
