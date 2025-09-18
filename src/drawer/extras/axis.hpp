@@ -8,7 +8,7 @@ enum AxisType {
     XYZ_AXIS
 };
 
-class axis : public Mesh::mesh
+class axis : public Mesh::mesh<PosColorVertex>
 {
 private:
     Components::transform axis_transform;
@@ -38,7 +38,7 @@ private:
     static inline bool has_z(AxisType t) { return t==Z_AXIS || t==XZ_AXIS || t==YZ_AXIS || t==XYZ_AXIS; }
 
 public:
-    explicit axis(AxisType type = XYZ_AXIS) : axes_{type} { update_mesh(); }
+    explicit axis(AxisType type = XYZ_AXIS) : axes_{type} {  update_mesh(); }
     ~axis() = default;
 
     // transform

@@ -6,6 +6,7 @@
 #include "input/input.hpp"
 #include "drawer/line.hpp"
 #include "drawer/extras/axis.hpp"
+#include "drawer/plane.hpp"
 
 static const std::string vert_name = "test";
 static const std::string frag_name = "test";
@@ -13,9 +14,10 @@ static const std::string frag_name = "test";
 static const std::string lines_vert_name = "vs_flat";
 static const std::string lines_frag_name = "fs_flat";
 
-static bgfx::UniformHandle u_lightDirColor     ;
+static bgfx::UniformHandle u_lightPosIntensity     ;
 static bgfx::UniformHandle u_cameraPosShininess;
 static bgfx::UniformHandle u_albedo            ;
+static bgfx::UniformHandle u_TimeDeltaMouseXY            ;
 
 struct WindowSettings{
     uint16_t window_width = 1280;
@@ -78,28 +80,29 @@ void handle_resize(GLFWwindow * win, bgfx::Init& init, int& w, int& h){
 }
 
  
-void test(cube * c2){
+void test(/*cube * c2*/){
     // --------- cube ----------
-    c2->create_renderer(vert_name, frag_name, Shader::default_state);
-    c2->set_transform(Components::transform{
-        math::Vec3{0, 0, 0}, 
-        math::Vec3{0, 0, 0}, 
-        math::Vec3{1, 1, 1}
-    });
+    // c2->create_renderer(vert_name, frag_name, Shader::default_state);
+    // c2->set_transform(Components::transform{
+    //     math::Vec3{0, 0, 0}, 
+    //     math::Vec3{0, 0, 0}, 
+    //     math::Vec3{3,3,3}
+    // });
     // -------- axis -----------
-    axis ax(XYZ_AXIS);
+    static axis ax(XYZ_AXIS);
     ax.set_transform(Components::transform({0,0,0}, {0,0,0}, {1,1,1}));
-    ax.set_length(20.0f);                           // axes from -5..+5
+    ax.set_length(20.0f);                         
     ax.set_axes_colors(0xff0000ff, 0xff00ff00, 0xffff0000); // X=red, Y=green, Z=blue
 
     ax.enable_floor(true);
     ax.set_floor_plane(XZ_AXIS);
     ax.set_floor_lines_count(50);                 
     ax.set_floor_color(0xff5a5a5a);
-    ax.create_renderer_lines(lines_vert_name, lines_frag_name);  
+    ax.create_renderer_lines(lines_vert_name, lines_frag_name); 
+     
 }
 
-static void update_orbit_camera_blender(Input::input& in, int winW, int winH,
+static bx::Vec3 update_orbit_camera_blender(Input::input& in, int winW, int winH,
                                         float* outView /*16*/, float* outProj /*16*/)
 {
     // persistent camera state (orbit around target)
@@ -145,9 +148,11 @@ static void update_orbit_camera_blender(Input::input& in, int winW, int winH,
     bx::mtxProj(outProj, 60.0f, float(winW)/float(winH), 0.1f, 1000.0f,
                 bgfx::getCaps()->homogeneousDepth); 
                 
-    u_lightDirColor      = bgfx::createUniform("u_lightDirColor",      bgfx::UniformType::Vec4);
+    u_lightPosIntensity      = bgfx::createUniform("u_lightPosIntensity",      bgfx::UniformType::Vec4);
     u_cameraPosShininess = bgfx::createUniform("u_cameraPosShininess", bgfx::UniformType::Vec4);
     u_albedo             = bgfx::createUniform("u_albedo",             bgfx::UniformType::Vec4);
+    u_TimeDeltaMouseXY             = bgfx::createUniform("u_TimeDeltaMouseXY",             bgfx::UniformType::Vec4);
+    return eye;
 }
 
 
@@ -162,19 +167,31 @@ int main()
         std::cout << re.what() << std:: endl;
         return EXIT_FAILURE;
     }
-    cube *c2=new cube();
-
+    //cube *c2=new cube(0xff0000ff);
+    cube *light_source = new cube(0xffff00ff);
+    light_source->create_renderer("light", "light");
+    light_source->set_transform(Components::transform{
+        math::Vec3{3,3,3}, 
+        math::Vec3{0, 0, 0}, 
+        math::Vec3{0.5,0.5,0.5}
+    });
+    plane pl{0xff0000ff};
+    pl.create_renderer("plane", frag_name);
+    //pl.set_subdivision(math::Vec2(100,100));
+    Components::transform trans = pl.get_transform();
+    pl.set_transform(Components::transform{math::Vec3{7.5, 0.1, -7.5}, trans.get_rotation(), math::Vec3{10}});
     // create managers 
     Input::input input_manager(win);
     auto& inst = Shader::shader::Instance();
     Time::time::init();
     
-    test(c2);
+     test(/*c2*/);
 
     int w = ws.window_width, h = ws.window_height;
     // show the window
     glfwShowWindow(win);
     float angle = 0;
+
     // Main loop
     while (!glfwWindowShouldClose(win))
     {
@@ -191,22 +208,25 @@ int main()
         bgfx::touch(0); // ensure view is valid even if we submit nothing
 
         float view[16], proj[16];
-        update_orbit_camera_blender(input_manager, w, h, view, proj);
+        bx::Vec3 eye = update_orbit_camera_blender(input_manager, w, h, view, proj);
         bgfx::setViewTransform(0, view, proj);  
-        
+        math::Vec3 pos = light_source->get_transform().get_position();
         // light & material
         const bx::Vec3 lightDir = bx::normalize(bx::Vec3(-1.0f, 0.0f, -1.0f)); // world-space
-        float lightDirColor[4]      = { lightDir.x, lightDir.y, lightDir.z, 0.5}; // w = intensity
-        float cameraPosShininess[4] = { 0.0f, 1.5f, -4.0f, 32.0f };                // .w = shininess
-        float albedo[4]             = { 0.85f, 0.85f, 0.9f, 1.0f };
+        float lightDirColor[4]      = { pos.x, pos.y, pos.z,1.0f}; // w = intensity
+        float cameraPosShininess[4] = { eye.x, eye.y , eye.z, 32.0f };                // .w = shininess
+        float albedo[4]             = { 1.0f, 0.0f,1.0f, 1.0f };
 
-        Components::transform tr = c2->get_transform();
-        tr.set_rotation(math::Vec3{angle, angle, angle});
-        c2->set_transform(tr);
-
-        bgfx::setUniform(u_lightDirColor,      lightDirColor);
+        Components::transform tr = light_source->get_transform();
+        float dis =5;
+        tr.set_position( math::Vec3{0,7,0} + math::Vec3{dis*bx::cos(angle), 0, dis*bx::sin(angle)});
+        light_source->set_transform(tr);
+        math::Vec2 p = input_manager.get_mouse_pos().x;
+        float timeDeltaMouseXY[4] = {angle ,Time::time::delta_time, p.x, p.y};
+        bgfx::setUniform(u_lightPosIntensity,      lightDirColor);
         bgfx::setUniform(u_cameraPosShininess, cameraPosShininess);
         bgfx::setUniform(u_albedo,             albedo);
+        bgfx::setUniform(u_TimeDeltaMouseXY, timeDeltaMouseXY);
 
 
         inst.update();

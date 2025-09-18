@@ -27,7 +27,7 @@ void axis::update_mesh()
         return r + pos;
     };
 
-    std::vector<vertex_info> verts;
+    std::vector<PosColorVertex> verts;
     std::vector<uint16_t>   idx;
 
     verts.reserve(2048);
@@ -38,8 +38,8 @@ void axis::update_mesh()
         const uint16_t i1 = i0 + 1;
         const math::Vec3 A = xform(a);
         const math::Vec3 B = xform(b);
-        verts.push_back({ A.x, A.y, A.z, A.x, A.y, A.z, ca });
-        verts.push_back({ B.x, B.y, B.z, B.x, B.y, B.z, cb });
+        verts.push_back({ A.x, A.y, A.z, ca });
+        verts.push_back({ B.x, B.y, B.z, cb });
         idx.push_back(i0); idx.push_back(i1);
     };
 

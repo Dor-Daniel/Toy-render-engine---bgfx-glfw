@@ -45,15 +45,16 @@ namespace Shader {
     constexpr uint64_t default_state =
         BGFX_STATE_WRITE_R | BGFX_STATE_WRITE_G | BGFX_STATE_WRITE_B |
         BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_CULL_CW | BGFX_STATE_MSAA;
+        BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA;
     constexpr uint64_t line_state = default_state | BGFX_STATE_PT_LINES;
 
     // Add more as you create programs
-    enum ProgramType : uint16_t { BACKGROUND = 0 };
+    enum ProgramType : uint16_t { BACKGROUND = 0, FISRT, SECOND, THIRD };
 
     struct ShaderInfo {
-        ProgramType program_type;
+        ProgramType program_type = BACKGROUND;
         viewID_t    view_id = 0;
+        std::string si_name;
 
         bgfx::VertexLayout        s_v_layout{};
         bgfx::VertexBufferHandle  v_handle = BGFX_INVALID_HANDLE;

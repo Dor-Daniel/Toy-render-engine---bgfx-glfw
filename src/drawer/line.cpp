@@ -32,14 +32,14 @@ void line::update_mesh() {
     math::Vec3 A = xform(a_local);
     math::Vec3 B = xform(b_local);
 
-    std::vector<vertex_info> verts = {
-        { A.x, A.y, A.z,A.x, A.y, A.z, colA },
-        { B.x, B.y, B.z, B.x, B.y, B.z, colB },
+    std::vector<PosColorVertex> verts = {
+        { A.x, A.y, A.z, colA },
+        { B.x, B.y, B.z, colB },
     };
 
     // one line segment → two indices
     std::vector<uint16_t> idx = { 0, 1 };
 
     set_vertices_data(std::move(verts));
-    set_lines_data(std::move(idx));
+    set_lines_data   (std::move(idx));
 }

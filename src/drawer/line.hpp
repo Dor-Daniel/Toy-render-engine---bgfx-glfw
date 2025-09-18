@@ -3,7 +3,7 @@
 #include "mesh.hpp"
 #include "../components/transform.hpp"
 
-class line : public Mesh::mesh {
+class line : public Mesh::mesh<PosColorVertex> {
 private:
     Components::transform line_transform;
     math::Vec3 a_local{0.0f, 0.0f, 0.0f};

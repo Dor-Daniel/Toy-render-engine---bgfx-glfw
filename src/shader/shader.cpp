@@ -9,6 +9,7 @@ namespace Shader {
 ShaderInfo::ShaderInfo(ProgramType t)
 : program_type(t), s_id(g_next_id++) {
     v_handle = BGFX_INVALID_HANDLE;
+     bx::mtxIdentity(transform_matrix);
 }
 
 ShaderInfo::ShaderInfo(ShaderInfo&& o) noexcept
@@ -56,6 +57,7 @@ ShaderInfo::~ShaderInfo() {
 void ShaderInfo::set_view_id(viewID_t id) { view_id = id; }
 
 void ShaderInfo::set_vertex_data(const void* data, uint32_t bytes, const bgfx::VertexLayout& layout) {
+    if (bytes == 0 || data == nullptr) return;
     if (bgfx::isValid(v_handle)) { bgfx::destroy(v_handle); v_handle = BGFX_INVALID_HANDLE; } // already set
     const bgfx::Memory* mem = bgfx::copy(data, bytes);
     v_handle = bgfx::createVertexBuffer(mem, layout);
@@ -93,8 +95,6 @@ std::shared_ptr<ShaderInfo> shader::add_shader_info(std::shared_ptr<Shader::Shad
 
 
 void shader::update() {
-
-
     for (auto& si : shader_infos_) {
         if (!bgfx::isValid(si->v_handle)) continue;
 
@@ -103,7 +103,7 @@ void shader::update() {
             if (!bgfx::isValid(ib)) continue;
             bgfx::setTransform(si->transform_matrix);
             bgfx::setIndexBuffer(ib);
-            bgfx::setState(std::move(si->state));
+            bgfx::setState(si->state);
             const auto prog = programs_[static_cast<size_t>(si->program_type)];
             bgfx::submit(si->view_id, prog);
         }

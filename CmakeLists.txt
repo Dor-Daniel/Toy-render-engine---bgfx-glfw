@@ -45,12 +45,13 @@ add_executable(BGFX_project
   src/shader/shader.hpp
   src/shader/shader.cpp
 
+  src/drawer/plane.hpp
+  src/drawer/plane.cpp
   src/drawer/cube.hpp
   src/drawer/cube.cpp
   src/drawer/line.hpp
   src/drawer/line.cpp
   src/drawer/mesh.hpp
-  src/drawer/mesh.cpp
 
   src/drawer/extras/axis.cpp
   src/drawer/extras/axis.hpp

@@ -1,13 +1,12 @@
 #include "cube.hpp"
 
-cube::cube(){
+cube::cube(Color col){
     
     float s = cube_transform.get_scale().x /2;
     // half-size s
     auto V = [](float x,float y,float z, float nx,float ny,float nz, uint32_t c){
         return vertex_info{x,y,z, nx,ny,nz, c};
     };
-    Color col = 0xff00ff00;
     std::vector<vertex_info> verts = {
         // +Z (front)
         V(-s,+s,+s, 0, 0, 1, col), V(+s,+s,+s, 0,0, 1, col),
