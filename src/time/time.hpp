@@ -1,5 +1,5 @@
 #pragma once
-namespace Time{
+namespace TimeSystem{
     class time{
         public:
             static float delta_time;

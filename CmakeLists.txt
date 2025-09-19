@@ -108,7 +108,11 @@ if(NOT EXISTS "${VARYING_FILE}")
 endif()
 
 # 3) Shaderc platform/profile (match your renderer)
-set(SHADER_PLATFORM windows)
+if (WIN32)
+  set(SHADER_PLATFORM windows)
+else()
+  set(SHADER_PLATFORM linux)
+endif()
 
 set(SHADER_PROFILE spirv)  # Vulkan; for D3D11 use s_5_0, for GL use 430, for Metal use metal
 

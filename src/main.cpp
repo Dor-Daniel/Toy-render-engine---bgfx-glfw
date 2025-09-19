@@ -7,6 +7,8 @@
 #include "drawer/line.hpp"
 #include "drawer/extras/axis.hpp"
 #include "drawer/plane.hpp"
+#include <GLFW/glfw3native.h>
+#include "../assets/icon.h" 
 
 static const std::string vert_name = "test";
 static const std::string frag_name = "test";
@@ -22,15 +24,28 @@ static bgfx::UniformHandle u_TimeDeltaMouseXY            ;
 struct WindowSettings{
     uint16_t window_width = 1280;
     uint16_t window_height = 720;
-    std::string window_title = "Window";
+    std::string window_title = "My Render Engine";
 };
 
 
 void init_bgfx(GLFWwindow * win, bgfx::Init* init){
     
-    // Fill platform data for bgfx
-    bgfx::PlatformData pd{};
-    pd.nwh = glfwGetWin32Window(win);
+        // Fill platform data for bgfx
+        bgfx::PlatformData pd{};
+#ifdef _WIN32
+    HWND nwh = glfwGetWin32Window(win);
+    void* ndt = nullptr;
+#else
+    #ifdef GLFW_EXPOSE_NATIVE_X11
+        Display* ndt = glfwGetX11Display();
+        ::Window nwhX11 = glfwGetX11Window(win);
+        void* nwh = (void*)(uintptr_t)nwhX11;
+    #elif defined(GLFW_EXPOSE_NATIVE_WAYLAND)
+        struct wl_display* ndt = glfwGetWaylandDisplay();
+        struct wl_surface* nwh = glfwGetWaylandWindow(win);
+    #endif
+#endif
+    pd.nwh = nwh;
     
     int fbw, fbh; glfwGetFramebufferSize(win, &fbw, &fbh);
     
@@ -57,7 +72,17 @@ void init_engine(GLFWwindow*& win, WindowSettings& ws, bgfx::Init& init){
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     win = glfwCreateWindow(ws.window_width, ws.window_height, ws.window_title.c_str(), nullptr, nullptr);
     if (!win) { throw std::runtime_error("Window creation failed\n"); }
-    // < --- end window init settings --- > // 
+    // < --- end window init settings --- > //
+    
+    
+
+    GLFWimage images[1];
+    images[0].width  =  ICON_WIDTH;
+    images[0].height =  ICON_HEIGHT;
+    images[0].pixels = icon_pixels;
+    glfwSetWindowIcon(win, 1, images);
+
+
 
     // init bgfx
     init_bgfx(win, &init);
@@ -80,14 +105,8 @@ void handle_resize(GLFWwindow * win, bgfx::Init& init, int& w, int& h){
 }
 
  
-void test(/*cube * c2*/){
-    // --------- cube ----------
-    // c2->create_renderer(vert_name, frag_name, Shader::default_state);
-    // c2->set_transform(Components::transform{
-    //     math::Vec3{0, 0, 0}, 
-    //     math::Vec3{0, 0, 0}, 
-    //     math::Vec3{3,3,3}
-    // });
+void draw_axis(){
+
     // -------- axis -----------
     static axis ax(XYZ_AXIS);
     ax.set_transform(Components::transform({0,0,0}, {0,0,0}, {1,1,1}));
@@ -139,22 +158,43 @@ static bx::Vec3 update_orbit_camera_blender(Input::input& in, int winW, int winH
     // build eye from yaw/pitch/distance around target (forward +Z at yaw=0,pitch=0)
     const float cp = std::cos(pitch), sp = std::sin(pitch);
     const float cy = std::cos(yaw),   sy = std::sin(yaw);
-    bx::Vec3 at  { target.x, target.y, target.z };
-    bx::Vec3 dir { cp * sy, sp, cp * cy };              // +Z when yaw=0,pitch=0
+    bx::Vec3 at  { target.x           , target.y           , target.z            };
+    bx::Vec3 dir { cp * sy            , sp                 , cp * cy             };  // +Z when yaw=0,pitch=0
     bx::Vec3 eye { at.x - dir.x * dist, at.y - dir.y * dist, at.z - dir.z * dist };
 
     // view / proj
     bx::mtxLookAt(outView, eye, at, bx::Vec3{0.0f, 1.0f, 0.0f});  // up = +Y  
-    bx::mtxProj(outProj, 60.0f, float(winW)/float(winH), 0.1f, 1000.0f,
+    bx::mtxProj(outProj, 60.0f, float(winW) / float(winH), 0.1f, 1000.0f,
                 bgfx::getCaps()->homogeneousDepth); 
                 
-    u_lightPosIntensity      = bgfx::createUniform("u_lightPosIntensity",      bgfx::UniformType::Vec4);
-    u_cameraPosShininess = bgfx::createUniform("u_cameraPosShininess", bgfx::UniformType::Vec4);
-    u_albedo             = bgfx::createUniform("u_albedo",             bgfx::UniformType::Vec4);
-    u_TimeDeltaMouseXY             = bgfx::createUniform("u_TimeDeltaMouseXY",             bgfx::UniformType::Vec4);
+    u_lightPosIntensity  = bgfx::createUniform("u_lightPosIntensity" ,bgfx::UniformType::Vec4);
+    u_cameraPosShininess = bgfx::createUniform("u_cameraPosShininess",bgfx::UniformType::Vec4);
+    u_albedo             = bgfx::createUniform("u_albedo"            ,bgfx::UniformType::Vec4);
+    u_TimeDeltaMouseXY   = bgfx::createUniform("u_TimeDeltaMouseXY"  ,bgfx::UniformType::Vec4);
+
     return eye;
 }
 
+void print_fps(){
+     bgfx::setDebug(BGFX_DEBUG_TEXT);
+
+        // Clear screen and debug text
+        bgfx::dbgTextClear();
+        // compute instantaneous values
+        float dt  = TimeSystem::time::delta_time;       // seconds per frame
+        float fps = dt > 0.0f ? 1.0f / dt : 0.0f;
+        float ms  = dt * 1000.0f;
+
+        // optional: smooth FPS with EMA
+        static float fpsSmooth = 0.0f;
+        const float alpha = 0.1f;                        // 0..1 (higher = less smoothing)
+        fpsSmooth = (fpsSmooth == 0.0f) ? fps : (alpha*fps + (1.0f - alpha)*fpsSmooth);
+
+        // print
+        char buf[128];
+        std::snprintf(buf, sizeof(buf), "FPS: %.1f   (%.2f ms)", fpsSmooth, ms);
+        bgfx::dbgTextPrintf(1, 1, 0x9f, buf);
+}
 
 int main()
 {
@@ -166,8 +206,12 @@ int main()
     }catch(const std::runtime_error re){
         std::cout << re.what() << std:: endl;
         return EXIT_FAILURE;
-    }
-    //cube *c2=new cube(0xff0000ff);
+    };
+    Input::input input_manager(win);
+    auto& inst = Shader::shader::Instance();
+    TimeSystem::time::init();
+
+    // ----------- simple rendering -------
     cube *light_source = new cube(0xffff00ff);
     light_source->create_renderer("light", "light");
     light_source->set_transform(Components::transform{
@@ -177,27 +221,22 @@ int main()
     });
     plane pl{0xff0000ff};
     pl.create_renderer("plane", frag_name);
-    //pl.set_subdivision(math::Vec2(100,100));
     Components::transform trans = pl.get_transform();
     pl.set_transform(Components::transform{math::Vec3{7.5, 0.1, -7.5}, trans.get_rotation(), math::Vec3{10}});
-    // create managers 
-    Input::input input_manager(win);
-    auto& inst = Shader::shader::Instance();
-    Time::time::init();
-    
-     test(/*c2*/);
+
 
     int w = ws.window_width, h = ws.window_height;
     // show the window
     glfwShowWindow(win);
     float angle = 0;
-
+    
     // Main loop
     while (!glfwWindowShouldClose(win))
     {
-        Time::time::update();
+        TimeSystem::time::update();
         input_manager.update();
-        angle += Time::time::delta_time;
+        angle += TimeSystem::time::delta_time;
+
         // Resize handling
         handle_resize(win, init, w, h);
 
@@ -211,23 +250,29 @@ int main()
         bx::Vec3 eye = update_orbit_camera_blender(input_manager, w, h, view, proj);
         bgfx::setViewTransform(0, view, proj);  
         math::Vec3 pos = light_source->get_transform().get_position();
+       
         // light & material
         const bx::Vec3 lightDir = bx::normalize(bx::Vec3(-1.0f, 0.0f, -1.0f)); // world-space
         float lightDirColor[4]      = { pos.x, pos.y, pos.z,1.0f}; // w = intensity
         float cameraPosShininess[4] = { eye.x, eye.y , eye.z, 32.0f };                // .w = shininess
         float albedo[4]             = { 1.0f, 0.0f,1.0f, 1.0f };
 
+        // rotate light sourcein circle with radius dis
         Components::transform tr = light_source->get_transform();
-        float dis =5;
+        float dis = 5;
         tr.set_position( math::Vec3{0,7,0} + math::Vec3{dis*bx::cos(angle), 0, dis*bx::sin(angle)});
         light_source->set_transform(tr);
-        math::Vec2 p = input_manager.get_mouse_pos().x;
-        float timeDeltaMouseXY[4] = {angle ,Time::time::delta_time, p.x, p.y};
-        bgfx::setUniform(u_lightPosIntensity,      lightDirColor);
-        bgfx::setUniform(u_cameraPosShininess, cameraPosShininess);
-        bgfx::setUniform(u_albedo,             albedo);
-        bgfx::setUniform(u_TimeDeltaMouseXY, timeDeltaMouseXY);
 
+
+        math::Vec2 p = input_manager.get_mouse_pos();
+        float timeDeltaMouseXY[4] = {angle ,TimeSystem::time::delta_time, p.x, p.y};
+        
+        bgfx::setUniform(u_lightPosIntensity ,     lightDirColor);
+        bgfx::setUniform(u_cameraPosShininess,cameraPosShininess);
+        bgfx::setUniform(u_albedo            ,            albedo);
+        bgfx::setUniform(u_TimeDeltaMouseXY  ,  timeDeltaMouseXY);
+        
+        print_fps();
 
         inst.update();
 

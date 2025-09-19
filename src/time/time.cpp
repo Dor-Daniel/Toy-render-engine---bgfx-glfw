@@ -1,6 +1,6 @@
 #include "time.hpp"
 #include "../config.hpp"
-namespace Time{
+namespace TimeSystem{
     float time::delta_time = 0.0f;
     float time::cycle_time = 0.0f;
     float time::last       = 0.0f;

@@ -9,7 +9,7 @@ void main()
 {
     float ambient_strength = 0.1;
     vec3  ambient = u_albedo.xyz * ambient_strength;
-    float specularStrength = 0.5;
+    float specularStrength = 0.75;
 
     vec3 lightPos =  u_lightPosIntensity.xyz;
     vec3 lightDir = normalize(lightPos - v_worldPos);
@@ -25,7 +25,8 @@ void main()
     float diff = max(dot(normalize(v_normal), lightDir), 0.0);
     vec3 diffuse = diff * u_albedo.xyz;
 
-    vec3  result = (ambient + diffuse) * (v_color0.rgb) +  + specular;
+    vec3  result = (ambient + diffuse) * (v_color0.rgb)   + specular;
 
     gl_FragColor = vec4(result, 1.0);
+
 }
