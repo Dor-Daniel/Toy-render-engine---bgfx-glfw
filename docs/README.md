@@ -227,6 +227,18 @@ This makes navigation intuitive and physically consistent.
 - Clear boundaries between rendering, input, and math systems.
 
 - Built with maintainability and scalability in mind.
+## Gallery
+### Display window & Triangle rendering & Basic fragment shader
+![](screenshots/FirstTriangleRendering.png)
+### Cube rendering & Time based transformations
+![](ReadmeGallery/spining-cube.gif)
+### Navigation & Axis grid
+![](ReadmeGallery/navigation-axis.gif)
+### Lights: Ambient + Diffuse + Specular
+![](ReadmeGallery/Lighting.gif)
+### Lights & Math driven vertex transformations
+![](ReadmeGallery/vertex-movement+lights.gif)
+
 ---
 
 ### Built with C++, mathematics, and curiosity.
