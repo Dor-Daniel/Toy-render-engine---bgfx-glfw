@@ -99,12 +99,12 @@ void shader::update() {
         if (!bgfx::isValid(si->v_handle)) continue;
 
         bgfx::setVertexBuffer(0, si->v_handle);
+        const auto prog = programs_[static_cast<size_t>(si->program_type)];
         for (auto ib : si->i_handles) {
             if (!bgfx::isValid(ib)) continue;
             bgfx::setTransform(si->transform_matrix);
             bgfx::setIndexBuffer(ib);
             bgfx::setState(si->state);
-            const auto prog = programs_[static_cast<size_t>(si->program_type)];
             bgfx::submit(si->view_id, prog);
         }
     }

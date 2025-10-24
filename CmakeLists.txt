@@ -45,6 +45,7 @@ add_executable(BGFX_project
   src/shader/shader.hpp
   src/shader/shader.cpp
 
+  src/drawer/extras/sphere.cpp
   src/drawer/plane.hpp
   src/drawer/plane.cpp
   src/drawer/cube.hpp

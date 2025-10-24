@@ -1,10 +1,7 @@
 #pragma once
 #include "../config.hpp"
 
-
 namespace Input {
-    
-
 
 class input {
 private:
@@ -38,17 +35,39 @@ private:
     float drag_threshold{3.0f}; // pixels
     bool focused{true};
 
-public:
+    // Singleton instance
+    static input* instance;
+
+private:
     explicit input(GLFWwindow* _win);
+
+public:
     ~input() = default;
+
+    // Get singleton instance (must be initialized once with a window)
+    static input& get(GLFWwindow* _win = nullptr) {
+        if (!instance) {
+            if (_win == nullptr) {
+                throw std::runtime_error("Input not initialized: pass a GLFWwindow* the first time.");
+            }
+            instance = new input(_win);
+        }
+        return *instance;
+    }
+
+    // Destroy singleton instance
+    static void destroy() {
+        delete instance;
+        instance = nullptr;
+    }
 
     // Call once per frame
     void update();
 
     // Keys
     bool is_key_down(int key) const;
-    bool is_key_pressed(int key) const;   // went down this frame
-    bool is_key_released(int key) const;  // went up this frame
+    bool is_key_pressed(int key) const;
+    bool is_key_released(int key) const;
 
     // Mouse
     bool is_mouse_down(int button = GLFW_MOUSE_BUTTON_LEFT) const;
@@ -61,7 +80,7 @@ public:
 
     math::Vec2 get_mouse_pos()   const;
     math::Vec2 get_mouse_delta() const;
-    math::Vec2 get_scroll_delta() const; // reset each frame
+    math::Vec2 get_scroll_delta() const;
 
     int click_count_for(int button = GLFW_MOUSE_BUTTON_LEFT) const;
 

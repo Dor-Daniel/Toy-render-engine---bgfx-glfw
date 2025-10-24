@@ -1,6 +1,7 @@
 #include <cmath>
 #include <limits>
 #include <cmath>
+
 namespace math{
     struct Vec2 {
         float x{0.0f}, y{0.0f};
@@ -74,6 +75,9 @@ namespace math{
         static const Vec3 e2;
         static const Vec3 e3;
     };
+    
+    
+    
     inline const Vec2 Vec2::unit{1}; 
     inline const Vec2 Vec2::zero{0};
     inline const Vec2 Vec2::e1{1, 0};
@@ -98,4 +102,37 @@ namespace math{
                     (v.z * u.x - v.x * u.z) * Vec3::e2 +
                     (v.x * u.y - u.x * v.y) * Vec3::e3 ; 
             }
+
+    // struct Ray{
+    //     Vec3 begin;
+    //     Vec3 direction; 
+
+    //     Ray(Vec3 _begin, Vec3 _direction) : begin{_begin}, direction{_direction}{}
+
+    // };
+
+    // struct Plane{
+    //     Vec3 point;
+    //     Vec3 normal;
+
+    //     Plane(Vec3 _point, Vec3 _normal) : point{_point}, normal{_normal}{}
+    // };
+
+    // struct RayHitInfo{
+    //     Vec3 pointOfImpact;
+    //     float rayDistance;
+    //     float angleOfImpact;
+    //     bool hit;
+    // };
+
+    // RayHitInfo GetRayHitPlane(Ray ray, Plane plane){
+    //     RayHitInfo hitInfo = {};
+    //     float rayDotN = dot(ray.direction, plane.normal);
+    //     float angleOfImpact = acosf(rayDotN / (length(ray.direction) * length(plane.normal)));
+    //     if(angleOfImpact > bx::kPiHalf || angleOfImpact < )
+
+    //     return hitInfo;
+    // }
+
+
 }
