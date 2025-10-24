@@ -6,7 +6,6 @@ A minimal 3D rendering engine prototype built from scratch in C++ using bgfx and
 This project serves as a personal learning environment to understand how 3D rendering works under the hood; from vertex transformations to lighting models; while maintaining a clean, modular, and OOP-oriented code structure.
 
 ---
----
 
 ## Project Overview
 
