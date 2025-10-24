@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Configure Debug",   "type": "cmake", "command": "configure", "preset": "mingw-debug" },
+    { "label": "Configure Release", "type": "cmake", "command": "configure", "preset": "mingw-release" },
+
+    {
+      "label": "Build Debug (target only)",
+      "type": "cmake",
+      "command": "build",
+      "preset": "build-debug",
+      "targets": ["BGFX_project"],
+      "group": { "kind": "build", "isDefault": true },
+      "dependsOn": "Configure Debug",
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Build Release (target only)",
+      "type": "cmake",
+      "command": "build",
+      "preset": "build-release",
+      "targets": ["BGFX_project"],              // <— was ["run"]
+      "group": "build",
+      "dependsOn": "Configure Release",
+      "dependsOrder": "sequence"
+    }
+  ]
+}
